@@ -10,6 +10,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from endpoints.nalv_runtime import (
     NALV_HTTP_USER_AGENT,
+    NALV_ORIGIN,
     STORAGE_PENDING_KEY,
     STORAGE_TOKEN_KEY,
     SurfaceHttpError,
@@ -229,6 +230,65 @@ class NalvConnectStorageTest(unittest.TestCase):
         self.assertEqual(result["disconnected"], True)
         self.assertIsNone(storage_get(session, STORAGE_TOKEN_KEY))
         self.assertEqual(mocked.call_args_list[0].args[1], STORED)
+
+
+class NalvFixedOriginTest(unittest.TestCase):
+    """The Marketplace build must only ever talk to the fixed NALV origin."""
+
+    def test_origin_constant_is_production_nalv(self):
+        self.assertEqual(NALV_ORIGIN, "https://app.nalv.ai")
+
+    def test_start_connect_ignores_settings_origin_override(self):
+        session = FakeSession()
+        with patch("endpoints.nalv_runtime.nalv_json") as mocked:
+            mocked.return_value = {
+                "connectSessionId": "csess-aaaaaaaaaaaaaaaa",
+                "exchangeSecret": "exchange-secret",
+                "authorizationUrl": ORIGIN + "/connect/dify?sid=csess-aaaaaaaaaaaaaaaa&state=state-1",
+            }
+            start_connect(session, {"nalv_origin": "https://attacker.example"})
+        self.assertEqual(mocked.call_args_list[0].args[0], "https://app.nalv.ai")
+
+    def test_run_check_ignores_payload_origin_override(self):
+        session = FakeSession()
+        storage_set(session, STORAGE_TOKEN_KEY, STORED)
+        settings = {"nalv_origin": "https://attacker.example", "app": {"app_id": "app-1", "mode": "chatflow"}}
+        payload = {"nalv_origin": "https://evil.example", "app_id": "app-1"}
+        with patch("endpoints.nalv_runtime.nalv_json") as mocked:
+            mocked.side_effect = [
+                {"ok": True},
+                {"jobId": "job-1", "executionId": "exec-1", "userTurns": ["hello"]},
+                {"overallDecision": "PASS", "evidenceUrl": "https://app.nalv.ai/e"},
+            ]
+            result = run_check(session, settings, payload)
+        self.assertTrue(result["ok"])
+        for call in mocked.call_args_list:
+            self.assertEqual(call.args[0], "https://app.nalv.ai")
+
+    def test_disconnect_ignores_settings_origin_override(self):
+        session = FakeSession()
+        storage_set(session, STORAGE_TOKEN_KEY, STORED)
+        with patch("endpoints.nalv_runtime.nalv_json") as mocked:
+            mocked.return_value = {"ok": True, "revoked": True}
+            disconnect_nalv(session, {"nalv_origin": "https://attacker.example"})
+        self.assertEqual(mocked.call_args_list[0].args[0], "https://app.nalv.ai")
+
+    def test_harmless_unknown_settings_do_not_change_destination(self):
+        session = FakeSession()
+        storage_set(session, STORAGE_TOKEN_KEY, STORED)
+        with patch("endpoints.nalv_runtime.nalv_json") as mocked:
+            mocked.side_effect = [
+                {"ok": True},
+                {"jobId": "job-1", "executionId": "exec-1", "userTurns": ["hello"]},
+                {"overallDecision": "PASS", "evidenceUrl": "https://app.nalv.ai/e"},
+            ]
+            run_check(
+                session,
+                {"nalv_origin": "http://127.0.0.1:9999", "app": {"app_id": "app-1", "mode": "chat"}},
+                {},
+            )
+        for call in mocked.call_args_list:
+            self.assertEqual(call.args[0], "https://app.nalv.ai")
 
 
 if __name__ == "__main__":

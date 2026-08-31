@@ -25,8 +25,7 @@ NALV owns planning, evaluation, and the stored run. The plugin does not score th
 
 1. Install **NALV** from the Dify Marketplace, or upload the `.difypkg` from a NALV release.
 2. Add the NALV Endpoint.
-3. Leave **NALV workspace URL** as `https://app.nalv.ai` unless you run a private NALV origin.
-4. Select the Chatbot or Chatflow to verify. Agent, New Agent, and Workflow apps are rejected as an unsupported target. That is not a behavioral FAIL.
+3. Select the Chatbot or Chatflow to verify. Agent, New Agent, and Workflow apps are rejected as an unsupported target. That is not a behavioral FAIL.
 
 ## Connect with Google
 
@@ -50,7 +49,7 @@ Click **Disconnect NALV** on the Endpoint page. That removes the connected state
 
 ## What data is sent to NALV
 
-Connect sends a one-time connect session and, after Google sign-in, stores a scoped NALV surface token in Dify plugin session storage. Checks send the NALV-issued customer turns, observed assistant replies, conversation id, and Dify app id/mode to `https://app.nalv.ai` (or the private NALV origin you configured).
+Connect sends a one-time connect session and, after Google sign-in, stores a scoped NALV surface token in Dify plugin session storage. Checks send the NALV-issued customer turns, observed assistant replies, conversation id, and Dify app id/mode to `https://app.nalv.ai`. The destination is fixed and not configurable.
 
 The plugin does not send Dify workspace API keys. See [PRIVACY.md](./PRIVACY.md).
 

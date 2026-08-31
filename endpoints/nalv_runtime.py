@@ -3,7 +3,6 @@ from __future__ import annotations
 import json
 from typing import Any, Mapping
 from urllib.error import HTTPError, URLError
-from urllib.parse import urlparse
 from urllib.request import Request as UrlRequest
 from urllib.request import urlopen
 
@@ -12,6 +11,9 @@ UNSUPPORTED_MODES = {"agent", "agent-chat", "workflow", "completion"}
 NALV_REQUEST_TIMEOUT_SECONDS = 120
 # Some edges reject Python-urllib's default User-Agent. Send a plugin-specific one.
 NALV_HTTP_USER_AGENT = "NALV-Dify-Plugin/0.1"
+# Fixed production destination. The plugin never reads an origin from settings or
+# request payloads, so no caller can redirect its network traffic.
+NALV_ORIGIN = "https://app.nalv.ai"
 NALV_SURFACE_PATHS = (
     "/api/preflight/surface/dify/bind",
     "/api/preflight/surface/jobs",
@@ -87,8 +89,7 @@ def resolve_runtime_token(session: Any, settings: Mapping) -> str:
 
 
 def start_connect(session: Any, settings: Mapping) -> dict:
-    origin = normalize_nalv_origin(str(settings.get("nalv_origin") or "").strip())
-    created = nalv_json(origin, "", "POST", CONNECT_SESSIONS_PATH, {})
+    created = nalv_json(NALV_ORIGIN, "", "POST", CONNECT_SESSIONS_PATH, {})
     session_id = str(created.get("connectSessionId") or "")
     secret = str(created.get("exchangeSecret") or "")
     authorization_url = str(created.get("authorizationUrl") or "")
@@ -120,10 +121,9 @@ def complete_pending_connect(session: Any, settings: Mapping) -> dict | None:
     if not session_id or not secret:
         storage_delete(session, STORAGE_PENDING_KEY)
         return None
-    origin = normalize_nalv_origin(str(settings.get("nalv_origin") or "").strip())
     try:
         exchanged = nalv_json(
-            origin,
+            NALV_ORIGIN,
             "",
             "POST",
             CONNECT_SESSIONS_PATH + "/" + session_id + "/exchange",
@@ -147,31 +147,12 @@ def disconnect_nalv(session: Any, settings: Mapping) -> dict:
     token = resolve_runtime_token(session, settings)
     if token:
         try:
-            origin = normalize_nalv_origin(str(settings.get("nalv_origin") or "").strip())
-            nalv_json(origin, token, "POST", CONNECT_DISCONNECT_PATH, {})
+            nalv_json(NALV_ORIGIN, token, "POST", CONNECT_DISCONNECT_PATH, {})
         except SurfaceHttpError:
             pass
     storage_delete(session, STORAGE_TOKEN_KEY)
     storage_delete(session, STORAGE_PENDING_KEY)
     return {"ok": True, "disconnected": True}
-
-
-def normalize_nalv_origin(value: str) -> str:
-    raw = value.strip()
-    parsed = urlparse(raw)
-    if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-        raise SurfaceHttpError(
-            400,
-            "INVALID_ORIGIN",
-            "NALV workspace URL must be an http or https origin.",
-        )
-    if parsed.username or parsed.password:
-        raise SurfaceHttpError(
-            400,
-            "INVALID_ORIGIN",
-            "NALV workspace URL must not contain credentials.",
-        )
-    return parsed.scheme + "://" + parsed.netloc
 
 
 def require_plugin_chat_invoke(session: Any):
@@ -384,7 +365,6 @@ def reverse_invoke_turns(
 
 
 def run_check(session: Any, settings: Mapping, payload: Mapping) -> dict:
-    origin_raw = str(settings.get("nalv_origin") or payload.get("nalv_origin") or "").strip()
     try:
         complete_pending_connect(session, settings)
     except SurfaceHttpError as error:
@@ -401,12 +381,12 @@ def run_check(session: Any, settings: Mapping, payload: Mapping) -> dict:
             }
     token = resolve_runtime_token(session, settings) or str(payload.get("surface_token") or "").strip()
     app_id, app_mode = selected_dify_app(settings, payload)
-    if not origin_raw or not token:
+    if not token:
         return {
             "ok": False,
             "httpStatus": 400,
             "error": "MISSING_SETTINGS",
-            "message": "Connect NALV, or provide a NALV workspace URL and connection key.",
+            "message": "Connect NALV, or provide a NALV connection key.",
         }
     if not app_id:
         return {
@@ -424,15 +404,14 @@ def run_check(session: Any, settings: Mapping, payload: Mapping) -> dict:
             "message": "Agent, Workflow, and other modes are an unsupported target, not a behavioral FAIL.",
         }
     try:
-        origin = normalize_nalv_origin(origin_raw)
         bind = nalv_json(
-            origin,
+            NALV_ORIGIN,
             token,
             "POST",
             NALV_SURFACE_PATHS[0],
             {"appId": app_id, "appMode": mode},
         )
-        job = nalv_json(origin, token, "POST", NALV_SURFACE_PATHS[1], {})
+        job = nalv_json(NALV_ORIGIN, token, "POST", NALV_SURFACE_PATHS[1], {})
         observed = reverse_invoke_turns(
             session,
             app_id,
@@ -444,7 +423,7 @@ def run_check(session: Any, settings: Mapping, payload: Mapping) -> dict:
         runtime = observed.pop("pluginRuntime")
         evidence = {"executionId": job["executionId"], **observed}
         completed = nalv_json(
-            origin,
+            NALV_ORIGIN,
             token,
             "POST",
             NALV_SURFACE_PATHS[1] + "/" + str(job["jobId"]) + "/evidence",

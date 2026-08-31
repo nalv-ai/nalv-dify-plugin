@@ -10,7 +10,7 @@ This plugin sends check content from Dify to NALV. It is not a local-only plugin
 
 Connect creates a short-lived connect session, then the plugin later exchanges that session server-to-server. The browser never receives a NALV connection key.
 
-When you run a check, the plugin POSTs HTTPS requests to the configured NALV origin. The Marketplace default is `https://app.nalv.ai`. It only calls these NALV surface paths:
+When you run a check, the plugin POSTs HTTPS requests to `https://app.nalv.ai`. The destination is fixed in the plugin and is not configurable. It only calls these NALV surface paths:
 
 - `/api/preflight/surface/connect/sessions`
 - `/api/preflight/surface/connect/sessions/{id}/exchange`
@@ -52,7 +52,7 @@ The plugin itself does not call Gemini, Google, or other model APIs.
 
 ## Network destination
 
-The production Marketplace destination is `https://app.nalv.ai`. A private NALV operator may set a different NALV origin in Endpoint settings. The plugin only calls the fixed NALV surface paths on that origin. It does not fetch arbitrary end-user URLs, proxy the web, or crawl.
+The production Marketplace destination is `https://app.nalv.ai`, fixed in the plugin. It is not configurable, and request payloads cannot redirect it. The plugin does not fetch arbitrary end-user URLs, proxy the web, or crawl.
 
 Request timeout is 120 seconds. Connection keys are redacted from plugin error messages.
 

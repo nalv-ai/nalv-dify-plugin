@@ -11,7 +11,6 @@ from endpoints.nalv_runtime import (
     blocking_payload,
     chat_invoke_kwargs,
     display_app_mode,
-    normalize_nalv_origin,
     redact_secret,
     reverse_invoke_turns,
     selected_dify_app,
@@ -162,23 +161,6 @@ class NalvRuntimeTest(unittest.TestCase):
         self.assertEqual(chat.calls[1]["conversation_id"], "not-a-real-dify-conversation")
         self.assertEqual(observed["infrastructureError"]["code"], "DIFY_REVERSE_INVOKE_FAILED")
         self.assertNotEqual(observed.get("pluginRuntime", {}).get("method"), None)
-
-    def test_origin_is_normalized_to_scheme_and_host(self):
-        self.assertEqual(
-            normalize_nalv_origin("https://app.nalv.ai/extra/path"),
-            "https://app.nalv.ai",
-        )
-        self.assertEqual(
-            normalize_nalv_origin("http://127.0.0.1:5173"),
-            "http://127.0.0.1:5173",
-        )
-
-    def test_origin_rejects_credentials_and_non_http(self):
-        with self.assertRaises(SurfaceHttpError) as raised:
-            normalize_nalv_origin("https://user:secret@app.nalv.ai")
-        self.assertEqual(raised.exception.code, "INVALID_ORIGIN")
-        with self.assertRaises(SurfaceHttpError):
-            normalize_nalv_origin("ftp://app.nalv.ai")
 
     def test_connection_key_is_redacted_from_errors(self):
         self.assertEqual(
