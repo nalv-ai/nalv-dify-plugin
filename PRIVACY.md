@@ -27,6 +27,9 @@ Those requests may include:
 - Observed assistant replies from the selected Chatbot or Chatflow
 - The Dify conversation id for that check
 - NALV job and execution identifiers
+- An adapter/infrastructure error code and message text when a Dify reverse invocation fails
+
+Adapter runtime metadata (turn-level invocation details) stays in Dify; it is removed before the evidence request is sent.
 
 The plugin does **not** collect billing data and does **not** send Dify workspace API keys.
 
@@ -38,7 +41,18 @@ NALV uses this content to run a behavior check, store evidence, and return a dec
 
 ## What NALV stores
 
-NALV persists workspace-scoped check jobs, evidence, and run artifacts so you can open the Evidence URL later. Surface connection keys are stored as hashes, not as the raw secret. The plugin stores only the scoped, revocable NALV surface token in Dify plugin session storage.
+NALV persists workspace-scoped check jobs, evidence, and run artifacts so you can open the Evidence URL later. NALV stores persisted surface connection credentials only as hashes, not as raw secrets.
+
+## Credential storage
+
+Where each credential lives:
+
+- **NALV server-side**: persisted surface connection credentials are stored as hashes, not as raw secrets.
+- **Dify plugin storage**: after Connect, the scoped NALV surface token is stored in Dify plugin storage so it can be presented as a Bearer credential. Disconnect deletes it locally and asks NALV to revoke it. During Connect, a pending exchange secret is temporarily stored and deleted after a successful exchange or a terminal expiry/error state.
+- **Dify endpoint settings**: an optional manual NALV connection key may be stored as a Dify-managed secret setting.
+- **Request fallback**: when neither connected storage nor the endpoint setting supplies a credential, an advanced request may provide a `surface_token` in its payload. A payload-supplied token is used only for that request and is never persisted by the plugin.
+
+Dify plugin storage is provided by the Dify platform; this plugin makes no claim that it is encrypted.
 
 This plugin does not implement a user-facing deletion or retention control. Do not assume a retention period or a delete-on-request workflow until NALV documents and ships one.
 
@@ -58,8 +72,6 @@ Request timeout is 120 seconds. Connection keys are redacted from plugin error m
 
 ## Marketplace risk
 
-Recommended classification: **Medium**. Test prompts, Dify agent replies, conversation or execution metadata, and errors leave Dify for the NALV service.
+Recommended classification: **High**. Current Dify Marketplace requirements classify handling of authentication data as High risk, and this plugin handles authentication data: the scoped, revocable NALV surface token used as a Bearer credential, and the short-lived Connect exchange secret.
 
-This is not Low risk. Low risk would require no outbound user or test content.
-
-High risk would apply if a workspace routinely sends health, financial, biometric, children's, or other sensitive personal data through checks. Choose the higher level when that is true for your use.
+In addition, test prompts, Dify agent replies, conversation or execution metadata, and errors leave Dify for the NALV service. This is not Low risk; Low risk would require no outbound user or test content.
