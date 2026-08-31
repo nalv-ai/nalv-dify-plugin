@@ -1,0 +1,5 @@
+path: "/nalv"
+method: "POST"
+extra:
+  python:
+    source: "endpoints/nalv.py"

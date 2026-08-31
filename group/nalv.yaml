@@ -1,0 +1,26 @@
+settings:
+  - name: nalv_origin
+    type: text-input
+    required: true
+    default: https://app.nalv.ai
+    label:
+      en_US: NALV workspace URL
+    placeholder:
+      en_US: https://app.nalv.ai
+  - name: surface_token
+    type: secret-input
+    required: false
+    label:
+      en_US: NALV connection key
+    placeholder:
+      en_US: Optional advanced fallback. Prefer Connect NALV.
+  - name: app
+    type: app-selector
+    required: false
+    label:
+      en_US: Chatbot or Chatflow
+    placeholder:
+      en_US: Select the Chatbot or Chatflow to verify
+endpoints:
+  - endpoints/nalv.yaml
+  - endpoints/nalv-get.yaml

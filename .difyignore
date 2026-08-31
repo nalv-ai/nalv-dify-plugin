@@ -1,0 +1,29 @@
+# Development state and secrets — must never enter the Marketplace package.
+.env
+.env.*
+.venv/
+env/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.tox/
+.git/
+.gitignore
+.github/
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+*.log
+*.difypkg
+
+# Maintainer-only files. Runtime uses README.md, PRIVACY.md, and Python sources.
+DEVELOPING.md
+.env.example
+test_*.py
+tests/
