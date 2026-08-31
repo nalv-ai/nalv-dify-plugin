@@ -1,4 +1,24 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-  <rect width="64" height="64" rx="12" fill="#111"/>
-  <text x="32" y="40" text-anchor="middle" font-size="18" fill="#fff" font-family="sans-serif">N</text>
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <title>NALV Marketplace icon</title>
+  <desc>A white geometric N crossed by a blue diagonal slash on a deep navy rounded-square background.</desc>
+
+  <defs>
+    <linearGradient id="navy" x1="8" y1="5" x2="56" y2="59" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#031330"/>
+      <stop offset="1" stop-color="#010E2B"/>
+    </linearGradient>
+    <linearGradient id="white" x1="15.743" y1="15.054" x2="49.257" y2="49" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#FAF8F8"/>
+      <stop offset="1" stop-color="#F4F2F3"/>
+    </linearGradient>
+    <linearGradient id="blue" x1="45.965" y1="15" x2="24.917" y2="49" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#0644F7"/>
+      <stop offset="1" stop-color="#003BEF"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="2" y="2" width="60" height="60" rx="13" fill="url(#navy)"/>
+  <path d="M15.743 15.054H23.406L42.403 39.933V15.054H49.257V49H41.702L21.949 25.362V49H15.743Z" fill="url(#white)"/>
+  <path d="M42.3 15H49.257L28.102 49H22.273Z" fill="url(#blue)"/>
 </svg>
